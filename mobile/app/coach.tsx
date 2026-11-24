@@ -1,17 +1,17 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Alert, Modal, ScrollView, TextInput, View } from 'react-native';
+import { Alert, ScrollView, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { AI_SCOPES, type AiScope, type AiTask, type Insight } from '@gym/shared';
-import { AppText, Button, Card, Screen } from '../../components/ui';
-import { Chip, ChipRow } from '../../components/form';
-import { ProposalCard } from '../../components/ProposalCard';
-import { useAuth } from '../../store/authStore';
-import { aiChat, aiStatus, describeAiError, type AiStatus } from '../../services/aiApi';
-import { acceptConsent, CONSENT_POINTS, getConsent, revokeConsent, setScopes, type Consent } from '../../features/ai/consent';
-import { addMessage, clearHistory, listMessages, type AiMessage } from '../../features/ai/aiRepo';
-import { buildContext, type AiContext } from '../../features/ai/context';
-import { localInsights } from '../../features/ai/insights';
-import { colors, radius, spacing } from '../../theme/tokens';
+import { AppText, Button, Card, IconButton, Screen, ScreenHeader, Sheet } from '../components/ui';
+import { Chip, ChipRow } from '../components/form';
+import { ProposalCard } from '../components/ProposalCard';
+import { useAuth } from '../store/authStore';
+import { aiChat, aiStatus, describeAiError, type AiStatus } from '../services/aiApi';
+import { acceptConsent, CONSENT_POINTS, getConsent, revokeConsent, setScopes, type Consent } from '../features/ai/consent';
+import { addMessage, clearHistory, listMessages, type AiMessage } from '../features/ai/aiRepo';
+import { buildContext, type AiContext } from '../features/ai/context';
+import { localInsights } from '../features/ai/insights';
+import { colors, radius, spacing } from '../theme/tokens';
 
 const SCOPE_LABEL: Record<AiScope, string> = { training: 'Treino', nutrition: 'Nutrição', body: 'Corpo' };
 const QUICK: { label: string; task: AiTask; text: string; scopes: AiScope[]; fill?: boolean }[] = [
@@ -68,10 +68,7 @@ export default function Coach() {
   return (
     <Screen>
       <ScrollView ref={scroll} contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <AppText variant="title">Treinador IA</AppText>
-          <View><Button label="Foto de refeição" variant="secondary" onPress={() => router.push('/nutrition/meal-photo')} /></View>
-        </View>
+        <ScreenHeader title="Treinador IA" right={<IconButton name="camera-outline" label="Foto de refeição" onPress={() => router.push('/nutrition/meal-photo')} />} />
 
         <Card style={{ gap: spacing.xs }}>
           <AppText variant="h2">Análise local</AppText>
@@ -105,27 +102,21 @@ export default function Coach() {
             {loading && <AppText muted>O treinador está a pensar…</AppText>}
             {error ? <AppText style={{ color: colors.danger }}>{error}</AppText> : null}
 
-            <TextInput value={input} onChangeText={setInput} multiline placeholder="Pergunta ou pede um plano…" placeholderTextColor={colors.textMuted} maxLength={4000}
+            <TextInput accessibilityLabel="Mensagem" value={input} onChangeText={setInput} multiline placeholder="Pergunta ou pede um plano…" placeholderTextColor={colors.textMuted} maxLength={4000}
               style={{ minHeight: 56, maxHeight: 160, backgroundColor: colors.surfaceAlt, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, color: colors.text, padding: spacing.md, fontSize: 16 }} />
             <Button label="Enviar" loading={loading} disabled={!input.trim() || status?.enabled === false} onPress={() => void send()} />
             <AppText variant="small" muted>Sugestões automáticas, não aconselhamento médico. A IA nunca altera os teus planos sem tu aprovares.</AppText>
 
-            <Button label="Apagar histórico de conversas" variant="secondary" onPress={() => Alert.alert('Apagar histórico', 'Apagar todas as conversas deste dispositivo?', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Apagar', style: 'destructive', onPress: async () => { await clearHistory(user.id); setMessages([]); } }])} />
-            <Button label="Revogar consentimento da IA" variant="secondary" onPress={() => Alert.alert('Revogar consentimento', 'Deixas de poder enviar pedidos à IA até aceitares de novo.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Revogar', style: 'destructive', onPress: async () => { await revokeConsent(user.id); setConsent(null); } }])} />
+            <Button compact label="Apagar histórico de conversas" variant="ghost" onPress={() => Alert.alert('Apagar histórico', 'Apagar todas as conversas deste dispositivo?', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Apagar', style: 'destructive', onPress: async () => { await clearHistory(user.id); setMessages([]); } }])} />
+            <Button compact label="Revogar consentimento da IA" variant="ghost" onPress={() => Alert.alert('Revogar consentimento', 'Deixas de poder enviar pedidos à IA até aceitares de novo.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Revogar', style: 'destructive', onPress: async () => { await revokeConsent(user.id); setConsent(null); } }])} />
           </>
         )}
       </ScrollView>
 
-      <Modal visible={!!preview} animationType="slide" transparent onRequestClose={() => setPreview(null)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#000A' }}>
-          <View style={{ maxHeight: '85%', backgroundColor: colors.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg, gap: spacing.md }}>
-            <AppText variant="h2">Dados que serão enviados</AppText>
+      <Sheet visible={!!preview} title="Dados que serão enviados" onClose={() => setPreview(null)}>
             <AppText variant="small" muted>{preview ? `${(preview.bytes / 1024).toFixed(1)} KB · âmbitos: ${preview.ctx.scopes.map((s) => SCOPE_LABEL[s]).join(', ') || 'nenhum'} · sem nome nem email` : ''}</AppText>
-            <ScrollView style={{ backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md }}><AppText variant="small" style={{ fontFamily: 'monospace' }}>{preview ? JSON.stringify(preview.ctx.data, null, 2) : ''}</AppText></ScrollView>
-            <Button label="Fechar" variant="secondary" onPress={() => setPreview(null)} />
-          </View>
-        </View>
-      </Modal>
+            <AppText variant="small" style={{ fontFamily: 'monospace' }}>{preview ? JSON.stringify(preview.ctx.data, null, 2) : ''}</AppText>
+      </Sheet>
     </Screen>
   );
 }

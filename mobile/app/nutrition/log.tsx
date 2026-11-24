@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { QUANTITY_UNIT_LABELS, availableUnits, toDateKey, type Macros, type QuantityUnit } from '@gym/shared';
-import { AppText, Button, Card, Screen, BackLink } from '../../components/ui';
+import { AppText, Button, Card, Screen, ScreenHeader } from '../../components/ui';
 import { Chip, ChipRow, Stepper } from '../../components/form';
 import { useAuth } from '../../store/authStore';
 import { deleteFood, getFood, setFavorite } from '../../features/nutrition/foodsRepo';
@@ -79,11 +79,13 @@ export default function LogScreen() {
   if (!ready) return <Screen><View style={{ padding: spacing.lg }}><AppText muted>A carregar…</AppText></View></Screen>;
   const title = food?.name ?? recipeName ?? entryName ?? '';
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }} keyboardShouldPersistTaps="handled">
-        <BackLink />
+    <Screen footer={<>
+      {error ? <AppText style={{ color: colors.danger }}>{error}</AppText> : null}
+      <Button label={editing ? 'Guardar alterações' : p.recipeTarget ? 'Adicionar à receita' : 'Adicionar ao diário'} disabled={!preview} onPress={() => void save()} />
+    </>}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
+        <ScreenHeader title={title} />
         <View>
-          <AppText variant="title">{title}</AppText>
           {food?.brand ? <AppText muted>{food.brand}</AppText> : null}
           {food ? <AppText variant="small" muted>{Math.round(food.per100.kcal)} kcal · P {food.per100.protein} · H {food.per100.carbs} · G {food.per100.fat} (por 100 {food.baseUnit})</AppText> : null}
         </View>
@@ -103,8 +105,6 @@ export default function LogScreen() {
             <ChipRow>{meals.map((m) => <Chip key={m} label={mealLabel(m)} selected={meal === m} onPress={() => setMeal(m)} />)}</ChipRow>
           </View>
         )}
-        {error ? <AppText style={{ color: colors.danger }}>{error}</AppText> : null}
-        <Button label={editing ? 'Guardar alterações' : p.recipeTarget ? 'Adicionar à receita' : 'Adicionar ao diário'} disabled={!preview} onPress={() => void save()} />
         {food && (
           <View style={{ gap: spacing.sm }}>
             <Button label={food.isFavorite ? '★ Remover dos favoritos' : '☆ Guardar nos favoritos'} variant="secondary" onPress={async () => { await setFavorite(user.id, food.id, !food.isFavorite); setFood({ ...food, isFavorite: !food.isFavorite }); }} />

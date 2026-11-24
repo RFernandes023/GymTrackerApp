@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { formatDuration, formatWeight } from '@gym/shared';
+import { Ionicons } from '@expo/vector-icons';
+import { SET_TYPE_LABELS, formatDuration, formatWeight } from '@gym/shared';
 import { AppText, Button, Card, Screen } from '../../../components/ui';
 import { useAuth } from '../../../store/authStore';
 import { deleteSession, getSession } from '../../../features/workouts/sessionsRepo';
@@ -30,8 +31,9 @@ export default function Summary() {
   const sum = s.summary, prev = sum.previous;
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
+    <Screen footer={<Button label="Concluído" onPress={() => router.canGoBack?.() ? router.back() : router.replace('/(tabs)/workout')} />}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl }}>
+        <Ionicons name="checkmark-circle" size={56} color={colors.primary} />
         <AppText variant="title">Treino concluído</AppText>
         <AppText muted>{s.name} · {fmtDateTime(s.completedAt ?? s.startedAt)}</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
@@ -54,13 +56,12 @@ export default function Summary() {
           return (
             <Card key={e.id} style={{ gap: spacing.xs }}>
               <AppText style={{ fontWeight: '600' }}>{e.name}{Number.isFinite(t0) && t1 > t0 ? ` · ${formatDuration(t1 - t0)}` : ''}</AppText>
-              {e.sets.map((x, i) => <AppText key={x.id} muted>{i + 1}. {formatWeight(x.weight)} kg × {x.reps}{x.type !== 'working' ? ` (${x.type})` : ''}{x.rir != null ? ` · RIR ${x.rir}` : ''}</AppText>)}
+              {e.sets.map((x, i) => <AppText key={x.id} muted>{i + 1}. {formatWeight(x.weight)} kg × {x.reps}{x.type !== 'working' ? ` (${SET_TYPE_LABELS[x.type]})` : ''}{x.rir != null ? ` · RIR ${x.rir}` : ''}</AppText>)}
             </Card>
           );
         })}
-        <Button label="Concluído" onPress={() => router.replace('/(tabs)/workout')} />
-        <Button label="Eliminar este registo" variant="danger" onPress={() => Alert.alert('Eliminar registo', 'Apagar este treino do histórico?', [
-          { text: 'Cancelar', style: 'cancel' }, { text: 'Eliminar', style: 'destructive', onPress: async () => { await deleteSession(user.id, s.id); router.replace('/(tabs)/workout'); } }])} />
+        <Button compact icon="trash-outline" label="Eliminar este registo" variant="danger" onPress={() => Alert.alert('Eliminar registo', 'Apagar este treino do histórico?', [
+          { text: 'Cancelar', style: 'cancel' }, { text: 'Eliminar', style: 'destructive', onPress: async () => { await deleteSession(user.id, s.id); if (router.canGoBack?.()) router.back(); else router.replace('/(tabs)/workout'); } }])} />
       </ScrollView>
     </Screen>
   );

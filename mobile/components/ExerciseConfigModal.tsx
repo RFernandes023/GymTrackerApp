@@ -1,13 +1,13 @@
 import React from 'react';
-import { Modal, ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { GOAL_DEFAULTS, type TrainingGoal } from '@gym/shared';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { ExerciseConfig } from '@gym/shared';
-import { AppText, Button, Card } from './ui';
+import { AppText, Button, Card, Sheet } from './ui';
 import { Chip, ChipRow, Field, Stepper, Toggle } from './form';
-import { colors, radius, spacing } from '../theme/tokens';
+import { colors, spacing } from '../theme/tokens';
 
 const schema = z.object({
   warmups: z.number().int().min(0).max(5),
@@ -40,17 +40,11 @@ export function ExerciseConfigModal({ visible, title, initial, onCancel, onSave,
     <Controller control={control} name={name as any} render={({ field }) => <Stepper label={label} value={field.value as number} step={step} onChange={field.onChange} {...extra} />} />
   );
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onCancel}>
-      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#000A' }}>
-        <View style={{ maxHeight: '92%', backgroundColor: colors.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }} keyboardShouldPersistTaps="handled">
-            <AppText variant="h2">{title}</AppText>
+    <Sheet visible={visible} title={title} onClose={onCancel} footer={<Button label="Guardar" loading={isSubmitting} onPress={() => void handleSubmit(async (v) => onSave(v))()} />}>
             {num('sets', 'Séries efetivas', 1, { min: 1, max: 20 })}
             {num('warmups', 'Séries de aquecimento', 1, { min: 0, max: 5 })}
-            <View style={{ flexDirection: 'row', gap: spacing.md }}>
-              <View style={{ flex: 1 }}>{num('repMin', 'Repetições mín.', 1, { min: 1 })}</View>
-              <View style={{ flex: 1 }}>{num('repMax', 'Repetições máx.', 1, { min: 1, max: 100 })}</View>
-            </View>
+            {num('repMin', 'Repetições mín.', 1, { min: 1 })}
+            {num('repMax', 'Repetições máx.', 1, { min: 1, max: 100 })}
             {errors.repMax ? <AppText variant="small" style={{ color: colors.danger }}>{errors.repMax.message}</AppText> : null}
             {num('weight', 'Peso inicial (kg)', 2.5)}
             <Controller control={control} name="increment" render={({ field }) => (
@@ -90,11 +84,6 @@ export function ExerciseConfigModal({ visible, title, initial, onCancel, onSave,
               {num('restPauseSets', 'Mini-séries rest-pause', 1, { min: 0, max: 5 })}
             </Card>
             <Controller control={control} name="notes" render={({ field }) => <Field label="Notas" multiline value={field.value} onChangeText={field.onChange} />} />
-            <Button label="Guardar" loading={isSubmitting} onPress={() => void handleSubmit(async (v) => onSave(v))()} />
-            <Button label="Cancelar" variant="secondary" onPress={onCancel} />
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+    </Sheet>
   );
 }

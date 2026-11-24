@@ -5,21 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { GOAL_LABELS, SET_TYPE_LABELS, formatWeight, type ExerciseConfig, type TrainingGoal } from '@gym/shared';
 import { suggestionFor } from '../../features/workouts/suggest';
 import { useAuth } from '../../store/authStore';
-import { AppText, Button, Card, Screen, BackLink } from '../../components/ui';
+import { AppText, Button, Card, IconButton as IconBtn, Screen, ScreenHeader } from '../../components/ui';
 import { Chip, ChipRow, Field } from '../../components/form';
 import { ExerciseConfigModal } from '../../components/ExerciseConfigModal';
 import * as repo from '../../features/workouts/plansRepo';
 import { DAY_LABELS, type Plan, type PlanExercise } from '../../features/workouts/types';
-import { colors, MIN_TOUCH, radius, spacing } from '../../theme/tokens';
-
-function IconBtn({ name, label, onPress, color = colors.text }: { name: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; color?: string }) {
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
-      style={{ width: MIN_TOUCH - 8, height: MIN_TOUCH - 8, borderRadius: radius.pill, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
-      <Ionicons name={name} size={20} color={color} />
-    </Pressable>
-  );
-}
+import { colors, radius, spacing } from '../../theme/tokens';
 
 const summary = (e: PlanExercise) => {
   const w = e.sets.filter((s) => s.type === 'working' || s.type === 'failure');
@@ -34,6 +25,8 @@ export default function PlanEditor() {
   const user = useAuth((s) => s.user)!;
   const [plan, setPlan] = useState<Plan | null>(null);
   const [editing, setEditing] = useState<{ dayId: string; pe: PlanExercise } | null>(null);
+  const [openDay, setOpenDay] = useState<string | null | undefined>(undefined); // undefined = 1.º dia aberto
+  const [details, setDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reload = useCallback(async () => setPlan(await repo.getPlan(planId)), [planId]);
   useFocusEffect(useCallback(() => { void reload(); }, [reload]));
@@ -43,16 +36,25 @@ export default function PlanEditor() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }} keyboardShouldPersistTaps="handled">
-        <BackLink />
-        <Field label="Nome do plano" defaultValue={plan.name} onEndEditing={(e) => void run(() => repo.updatePlan(planId, { name: e.nativeEvent.text }))} />
-        <Field label="Descrição" defaultValue={plan.description ?? ''} multiline onEndEditing={(e) => void run(() => repo.updatePlan(planId, { description: e.nativeEvent.text || null }))} />
-        <AppText variant="small" muted>Objetivo do plano (define repetições, descanso e cargas iniciais dos novos exercícios)</AppText>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
+        <ScreenHeader title={plan.name} />
+        <Button compact variant="secondary" label={details ? 'Fechar detalhes do plano' : 'Nome e descrição'} icon={details ? 'chevron-up' : 'create-outline'} onPress={() => setDetails(!details)} />
+        {details && <><Field label="Nome do plano" defaultValue={plan.name} onEndEditing={(e) => void run(() => repo.updatePlan(planId, { name: e.nativeEvent.text }))} />
+        <Field label="Descrição" defaultValue={plan.description ?? ''} multiline onEndEditing={(e) => void run(() => repo.updatePlan(planId, { description: e.nativeEvent.text || null }))} /></>}
+        <AppText variant="small" muted>Objetivo do plano (define repetições e descanso dos novos exercícios)</AppText>
         <ChipRow>{(Object.keys(GOAL_LABELS) as TrainingGoal[]).map((g) => <Chip key={g} label={GOAL_LABELS[g]} selected={plan.goal === g} onPress={() => void run(() => repo.updatePlan(planId, { goal: g }))} />)}</ChipRow>
         {error ? <AppText style={{ color: colors.danger }}>{error}</AppText> : null}
 
-        {plan.days.map((day) => (
+        {plan.days.map((day, di) => { const isOpen = openDay === undefined ? di === 0 : openDay === day.id; return (
           <Card key={day.id} style={{ gap: spacing.md }}>
+            <Pressable accessibilityRole="button" accessibilityLabel={`${isOpen ? 'Fechar' : 'Abrir'} ${day.name}`} accessibilityState={{ expanded: isOpen }} onPress={() => setOpenDay(isOpen ? null : day.id)} style={{ flexDirection: 'row', alignItems: 'center', minHeight: 48 }}>
+              <View style={{ flex: 1 }}>
+                <AppText variant="h2">{day.name}</AppText>
+                <AppText variant="small" muted>{day.dayOfWeek ? `${DAY_LABELS[day.dayOfWeek]} · ` : ''}{day.exercises.length} exercício{day.exercises.length === 1 ? '' : 's'}</AppText>
+              </View>
+              <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
+            </Pressable>
+            {isOpen && <>
             <Field label="Dia / treino" defaultValue={day.name} onEndEditing={(e) => void run(() => repo.updateDay(planId, day.id, { name: e.nativeEvent.text }))} />
             <AppText variant="small" muted>Dia da semana (opcional — sem dia = plano flexível)</AppText>
             <ChipRow>
@@ -61,7 +63,7 @@ export default function PlanEditor() {
             </ChipRow>
             {day.exercises.length === 0 && <AppText muted>Sem exercícios.</AppText>}
             {day.exercises.map((e, i) => (
-              <View key={e.id} style={{ backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm, borderLeftWidth: e.supersetGroup ? 4 : 0, borderLeftColor: colors.accent }}>
+              <View key={e.id} style={{ backgroundColor: colors.bg, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm, borderLeftWidth: e.supersetGroup ? 4 : 0, borderLeftColor: colors.accent }}>
                 <AppText style={{ fontWeight: '600' }}>{e.name}</AppText>
                 <AppText variant="small" muted>{summary(e)}</AppText>
                 {e.supersetGroup ? <AppText variant="small" style={{ color: colors.accent }}>Superset</AppText> : null}
@@ -74,14 +76,15 @@ export default function PlanEditor() {
                 </View>
               </View>
             ))}
-            <Button label="Adicionar exercício" variant="secondary" onPress={() => router.push({ pathname: '/exercises', params: { planId, dayId: day.id } })} />
+            <Button label="Adicionar exercício" icon="add" variant="secondary" onPress={() => router.push({ pathname: '/exercises', params: { planId, dayId: day.id } })} />
             {plan.days.length > 1 && (
-              <Button label="Remover este dia" variant="danger" onPress={() => Alert.alert('Remover dia', `Remover "${day.name}" e os seus exercícios?`, [
+              <Button compact label="Remover este dia" variant="danger" onPress={() => Alert.alert('Remover dia', `Remover "${day.name}" e os seus exercícios?`, [
                 { text: 'Cancelar', style: 'cancel' }, { text: 'Remover', style: 'destructive', onPress: () => void run(() => repo.deleteDay(planId, day.id)) }])} />
             )}
+            </>}
           </Card>
-        ))}
-        <Button label="Adicionar dia" variant="secondary" onPress={() => void run(() => repo.addDay(planId, ''))} />
+        ); })}
+        <Button label="Adicionar dia" icon="calendar-outline" variant="secondary" onPress={() => void run(() => repo.addDay(planId, ''))} />
       </ScrollView>
 
       <ExerciseConfigModal

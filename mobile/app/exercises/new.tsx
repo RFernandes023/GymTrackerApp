@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AppText, Button, Screen } from '../../components/ui';
+import { AppText, Button, Screen, ScreenHeader } from '../../components/ui';
 import { Chip, ChipRow, Field } from '../../components/form';
 import { useAuth } from '../../store/authStore';
 import { createCustomExercise } from '../../features/workouts/exercisesRepo';
@@ -46,8 +46,7 @@ export default function NewExercise() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }} keyboardShouldPersistTaps="handled">
-        <Button label="Cancelar" variant="secondary" onPress={() => router.back()} />
-        <AppText variant="title">Novo exercício</AppText>
+        <ScreenHeader title="Novo exercício" />
         <Controller control={control} name="namePt" render={({ field }) => <Field label="Nome (português)" value={field.value} onChangeText={field.onChange} error={errors.namePt?.message} />} />
         <Controller control={control} name="nameEn" render={({ field }) => <Field label="Nome (inglês, opcional)" value={field.value} onChangeText={field.onChange} />} />
         <Controller control={control} name="altName" render={({ field }) => <Field label="Nome alternativo (opcional)" value={field.value} onChangeText={field.onChange} />} />

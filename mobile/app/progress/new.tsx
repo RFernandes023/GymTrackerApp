@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { deriveMetrics, isDateKey, toDateKey, type MeasurementInput } from '@gym/shared';
-import { AppText, Button, Card, Screen } from '../../components/ui';
+import { AppText, Button, Card, Screen, ScreenHeader } from '../../components/ui';
 import { Field } from '../../components/form';
 import { useAuth } from '../../store/authStore';
 import { getBodyInfo } from '../../features/profile/profileRepo';
@@ -66,8 +66,7 @@ export default function NewMeasurement() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
-        <Button label="Cancelar" variant="secondary" onPress={() => router.back()} />
-        <AppText variant="title">{id ? 'Editar registo' : 'Novo registo'}</AppText>
+        <ScreenHeader title={id ? 'Editar registo' : 'Novo registo'} />
         {f('date', 'Data (AAAA-MM-DD)', 'default')}
         {f('weight', 'Peso (kg)')}
 

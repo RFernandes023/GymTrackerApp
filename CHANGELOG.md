@@ -1,4 +1,8 @@
 # Changelog
+## 0.8.0 — Redesign
+- Barra do Android escondida (desliza para a ver) e menus, painéis e botões com a área do sistema respeitada; teclado deixa de tapar a ação principal.
+- Treino: nada começa sem confirmação, proteção contra duplo toque, minimizar/descartar, sem descanso depois da última série, duração correta em treinos esquecidos.
+- Novo Início, Treino, Nutrição, Evolução, Definições, Planos e treino ativo; Treinador IA acessível a partir do Início.
 ## 0.7.1 — Testes de interface
 - 50 testes jest-expo que renderizam os ecrãs reais (login, dashboard, treino, importar JSON, diário, evolução, IA, planos, biblioteca, scanner, OCR manual, receitas, exportar, notificações, perfil, privacidade). React fixado numa única versão no monorepo. `FALTA.md`.
 

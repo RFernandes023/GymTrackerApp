@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { validatePer100, type Per100 } from '@gym/shared';
-import { AppText, Button, Screen } from '../../components/ui';
+import { AppText, Button, Screen, ScreenHeader } from '../../components/ui';
 import { Chip, ChipRow, Field } from '../../components/form';
 import { useAuth } from '../../store/authStore';
 import { getFood, saveFood } from '../../features/nutrition/foodsRepo';
@@ -68,8 +68,7 @@ export default function FoodForm() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }} keyboardShouldPersistTaps="handled">
-        <Button label="Cancelar" variant="secondary" onPress={() => router.back()} />
-        <AppText variant="title">{p.foodId ? 'Editar alimento' : 'Novo alimento'}</AppText>
+        <ScreenHeader title={p.foodId ? 'Editar alimento' : 'Novo alimento'} />
         {field('name', 'Nome', 'default')}
         {field('brand', 'Marca (opcional)', 'default')}
         {field('barcode', 'Código de barras (opcional)', 'number-pad')}

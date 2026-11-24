@@ -13,7 +13,7 @@ import ImportPlan from '../app/import-plan';
 import Diary from '../app/(tabs)/nutrition';
 import Progress from '../app/(tabs)/progress';
 import NewMeasurement from '../app/progress/new';
-import Coach from '../app/(tabs)/coach';
+import Coach from '../app/coach';
 import Library from '../app/exercises/index';
 import Plans from '../app/plans/index';
 import PlanEditor from '../app/plans/[id]';

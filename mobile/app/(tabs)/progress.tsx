@@ -2,13 +2,13 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { filterRange, monthlyComparison, type Point } from '@gym/shared';
-import { AppText, Button, Card, Screen } from '../../components/ui';
+import { AppText, Button, Card, EmptyState, ListGroup, ListRow, Screen, SectionTitle, TabHeader } from '../../components/ui';
 import { Chip, ChipRow } from '../../components/form';
 import { LineChart } from '../../components/LineChart';
 import { useAuth } from '../../store/authStore';
 import { getBodyInfo } from '../../features/profile/profileRepo';
 import { BUILTIN_METRICS, METRIC_LABELS, customMetricNames, listMeasurements, pointsFor, weeklySummary, type Measurement, type Metric, type WeeklySummary } from '../../features/progress/measurementsRepo';
-import { colors, radius, spacing } from '../../theme/tokens';
+import { colors, spacing } from '../../theme/tokens';
 import { fmtDate, fmtKg, fmtNumber } from '../../utils/format';
 
 const RANGES: [string, number | null][] = [['30 dias', 30], ['90 dias', 90], ['1 ano', 365], ['Tudo', null]];
@@ -41,38 +41,39 @@ export default function Progress() {
   const fmt = (n: number) => (metric === 'bodyFat' ? `${fmtNumber(n)} %` : fmtNumber(n));
   const lw = lastKnown(list, 'weight'), lb = lastKnown(list, 'bmi'), lf = lastKnown(list, 'bodyFat'), lm = lastKnown(list, 'muscleMass'), lt = lastKnown(list, 'waist');
 
-  const Tile = ({ title, value, sub }: { title: string; value: string; sub?: string }) => (
-    <Card style={{ flex: 1, minWidth: '47%', gap: 2 }}>
-      <AppText variant="small" muted>{title}</AppText><AppText variant="h2">{value}</AppText>{sub ? <AppText variant="small" muted>{sub}</AppText> : null}
-    </Card>
+  /** Tocar num indicador mostra-o no gráfico. */
+  const tile = (m: Metric, title: string, value: string, sub?: string) => (
+    <Pressable key={m} accessibilityRole="button" accessibilityLabel={`${title}: ${value}`} accessibilityState={{ selected: metric === m }} onPress={() => setMetric(m)} style={{ flexGrow: 1, flexBasis: '46%' }}>
+      <Card style={{ flex: 1, gap: 2, padding: spacing.md, borderColor: metric === m ? colors.primary : colors.border }}>
+        <AppText variant="small" muted>{title}</AppText><AppText variant="h2" style={{ fontSize: 22 }}>{value}</AppText>{sub ? <AppText variant="small" muted>{sub}</AppText> : null}
+      </Card>
+    </Pressable>
   );
 
   return (
-    <Screen>
+    <Screen tab>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <AppText variant="title">Evolução</AppText>
-          <View><Button label="Novo registo" onPress={() => router.push('/progress/new')} /></View>
-        </View>
+        <TabHeader title="Evolução"><Button compact icon="add" label="Novo registo" onPress={() => router.push('/progress/new')} /></TabHeader>
 
         {!hasProfile && (
           <Card style={{ gap: spacing.sm, borderColor: colors.warning }}>
             <AppText>Define o teu perfil (sexo, idade, altura) para calcular o IMC e as estimativas de gordura e músculo.</AppText>
-            <Button label="Definir perfil" variant="secondary" onPress={() => router.push('/profile')} />
+            <Button compact label="Definir perfil" variant="secondary" onPress={() => router.push('/profile')} />
           </Card>
         )}
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
-          <Tile title="Peso" value={lw ? fmtKg(lw.value) : '—'} sub={lw ? fmtDate(new Date(`${lw.date}T12:00:00`).getTime()) : 'Sem registos'} />
-          <Tile title="IMC" value={lb ? fmtNumber(lb.value) : '—'} sub={lb ? 'calculado automaticamente' : hasProfile ? undefined : 'Requer perfil'} />
-          <Tile title="Gordura corporal" value={lf ? `${fmtNumber(lf.value)} %` : '—'} sub={lf ? sourceTag(lf.m.bodyFatSource) : undefined} />
-          <Tile title="Massa muscular" value={lm ? fmtKg(lm.value) : '—'} sub={lm ? sourceTag(lm.m.muscleSource) : undefined} />
-          <Tile title="Cintura" value={lt ? `${fmtNumber(lt.value)} cm` : '—'} />
+          {tile('weight', 'Peso', lw ? fmtKg(lw.value) : '—', lw ? fmtDate(new Date(`${lw.date}T12:00:00`).getTime()) : 'Sem registos')}
+          {tile('bmi', 'IMC', lb ? fmtNumber(lb.value) : '—', lb ? 'calculado automaticamente' : hasProfile ? undefined : 'Requer perfil')}
+          {tile('bodyFat', 'Gordura corporal', lf ? `${fmtNumber(lf.value)} %` : '—', lf ? sourceTag(lf.m.bodyFatSource) : undefined)}
+          {tile('muscleMass', 'Massa muscular', lm ? fmtKg(lm.value) : '—', lm ? sourceTag(lm.m.muscleSource) : undefined)}
+          {tile('waist', 'Cintura', lt ? `${fmtNumber(lt.value)} cm` : '—')}
         </View>
         {(lf?.m.bodyFatSource === 'estimate' || lm?.m.muscleSource === 'estimate') && (
-          <AppText variant="small" muted>Gordura e músculo “estimados” são aproximações por fórmulas (podem errar vários pontos percentuais). Se tiveres medições de uma balança de bioimpedância ou DEXA, regista-as no novo registo.</AppText>
+          <AppText variant="small" muted>Gordura e músculo “estimativa” são aproximações por fórmulas. Se tiveres medições reais, adiciona-as num novo registo.</AppText>
         )}
 
+        <SectionTitle>Gráfico</SectionTitle>
         <Card style={{ gap: spacing.md }}>
           <ChipRow>{metrics.map((m) => <Chip key={m} label={metricName(m)} selected={metric === m} onPress={() => setMetric(m)} />)}</ChipRow>
           <ChipRow>{RANGES.map(([l, d]) => <Chip key={l} label={l} selected={range === d} onPress={() => setRange(d)} />)}</ChipRow>
@@ -81,7 +82,7 @@ export default function Progress() {
         </Card>
 
         <Card style={{ gap: spacing.xs }}>
-          <AppText variant="h2">Comparação mensal — {metricName(metric)}</AppText>
+          <AppText variant="h2">{metricName(metric)} por mês</AppText>
           {month.current === null && month.previous === null ? <AppText muted>Sem registos neste e no mês anterior.</AppText> : (
             <>
               <AppText>Este mês: {month.current !== null ? `${fmt(month.current)} (média de ${month.nCurrent})` : '—'}</AppText>
@@ -101,15 +102,14 @@ export default function Progress() {
           </Card>
         )}
 
-        <AppText variant="h2">Histórico</AppText>
-        {list.length === 0 && <AppText muted>Ainda não tens registos. Toca em “Novo registo”.</AppText>}
+        <SectionTitle>Histórico</SectionTitle>
+        {list.length === 0 && <EmptyState icon="body-outline" title="Sem registos" text="Regista o peso ou as medidas para veres a tua evolução." action={{ label: 'Fazer primeiro registo', onPress: () => router.push('/progress/new') }} />}
+        <ListGroup>
         {list.slice(0, 30).map((m) => (
-          <Pressable key={m.id} accessibilityRole="button" onPress={() => router.push({ pathname: '/progress/new', params: { id: m.id } })}
-            style={{ backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 2 }}>
-            <AppText style={{ fontWeight: '600' }}>{fmtDate(new Date(`${m.date}T12:00:00`).getTime())}</AppText>
-            <AppText variant="small" muted>{[m.weight != null && fmtKg(m.weight), m.bmi != null && `IMC ${m.bmi}`, m.bodyFat != null && `${m.bodyFat} % gord. (${sourceTag(m.bodyFatSource)})`, m.waist != null && `cintura ${m.waist} cm`].filter(Boolean).join(' · ') || 'Medidas corporais'}</AppText>
-          </Pressable>
+          <ListRow key={m.id} onPress={() => router.push({ pathname: '/progress/new', params: { id: m.id } })} title={fmtDate(new Date(`${m.date}T12:00:00`).getTime())}
+            sub={[m.weight != null && fmtKg(m.weight), m.bmi != null && `IMC ${m.bmi}`, m.bodyFat != null && `${m.bodyFat} % gord. (${sourceTag(m.bodyFatSource)})`, m.waist != null && `cintura ${m.waist} cm`].filter(Boolean).join(' · ') || 'Medidas corporais'} />
         ))}
+        </ListGroup>
       </ScrollView>
     </Screen>
   );

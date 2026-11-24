@@ -15,7 +15,7 @@ export async function configureNotifications() {
     },
   });
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync(CH_REST, { name: 'Descanso entre séries', importance: Notifications.AndroidImportance.HIGH, vibrationPattern: [0, 300, 150, 300], sound: 'default' });
+    await Notifications.setNotificationChannelAsync(CH_REST, { name: 'Descanso entre séries', importance: Notifications.AndroidImportance.HIGH, vibrationPattern: [0, 300, 150, 300] });
     await Notifications.setNotificationChannelAsync(CH_REMINDERS, { name: 'Lembretes', importance: Notifications.AndroidImportance.DEFAULT });
   }
 }

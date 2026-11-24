@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { NavigationBar } from 'expo-navigation-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '../store/authStore';
@@ -36,10 +37,13 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="light" />
+        {/* Esconde os botões do Android; aparecem ao deslizar de baixo para cima. */}
+        <NavigationBar hidden />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
           {/* Rotas privadas: só acessíveis com sessão */}
           <Stack.Protected guard={status === 'signedIn'}>
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="coach" />
             <Stack.Screen name="settings" options={{ presentation: 'card' }} />
             <Stack.Screen name="exercises/index" />
             <Stack.Screen name="exercises/[id]" />

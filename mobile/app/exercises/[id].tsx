@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { AppText, Button, Card, Screen, BackLink } from '../../components/ui';
+import { AppText, Button, Card, Screen, ScreenHeader } from '../../components/ui';
 import { ExerciseImage } from '../../components/ExerciseImage';
 import { getExercise } from '../../features/workouts/exercisesRepo';
 import { EQUIPMENT_LABELS, EXERCISE_TYPE_LABELS, MUSCLE_LABELS, exerciseName, type Exercise } from '../../features/workouts/types';
@@ -15,10 +15,9 @@ export default function ExerciseDetail() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
-        <BackLink />
+        <ScreenHeader title={exerciseName(ex)} />
         <View style={{ alignItems: 'center' }}><ExerciseImage exercise={ex} size={260} animated showCredit /></View>
         <View>
-          <AppText variant="title">{exerciseName(ex)}</AppText>
           {ex.namePt ? <AppText muted>{ex.nameEn}</AppText> : null}
           {ex.altName ? <AppText muted>Também: {ex.altName}</AppText> : null}
         </View>

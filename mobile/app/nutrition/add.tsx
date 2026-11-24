@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, ScrollView, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { FoodDraft } from '@gym/shared';
 import { AppText, Button, Screen, ScreenHeader } from '../../components/ui';
@@ -42,12 +42,12 @@ export default function AddFood() {
       <View style={{ padding: spacing.lg, gap: spacing.sm, flex: 1 }}>
         <ScreenHeader title={ingredientMode ? 'Ingrediente' : 'Adicionar alimento'} />
         <Field label="Pesquisar" value={query} onChangeText={setQuery} placeholder="Nome, marca ou código de barras" autoCorrect={false} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ gap: spacing.sm }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <Chip label="Ler código de barras" onPress={() => router.push({ pathname: '/nutrition/scan', params: base })} />
           <Chip label="Fotografar rótulo" onPress={() => router.push({ pathname: '/nutrition/label', params: base })} />
           <Chip label="Criar manualmente" onPress={() => router.push({ pathname: '/nutrition/food-form', params: base })} />
           {!ingredientMode && <Chip label="Receitas" onPress={() => router.push({ pathname: '/recipes', params: { pick: '1', date: p.date, meal: p.meal } })} />}
-        </ScrollView>
+        </View>
         {!query.trim() && (
           <ChipRow>
             <Chip label="Recentes" selected={tab === 'recent'} onPress={() => setTab('recent')} />
@@ -55,7 +55,7 @@ export default function AddFood() {
             <Chip label="Todos" selected={tab === 'all'} onPress={() => setTab('all')} />
           </ChipRow>
         )}
-        <FlatList
+        <FlatList keyboardShouldPersistTaps="handled"
           data={foods} keyExtractor={(f) => f.id} contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xxl }}
           ListEmptyComponent={<AppText muted>{query.trim() ? 'Nada nos teus alimentos.' : 'Ainda não tens alimentos nesta lista. Lê um código de barras, fotografa um rótulo ou cria um alimento.'}</AppText>}
           renderItem={({ item }) => (

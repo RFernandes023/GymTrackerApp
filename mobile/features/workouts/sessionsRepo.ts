@@ -160,6 +160,8 @@ export async function completeSet(sessionId: string, setId: string): Promise<num
     // drop set seguinte: a carga sugerida desce automaticamente (editável)
     if (nxt && !nxt.completed && nxt.type === 'drop') await db.runAsync('UPDATE session_sets SET weight = ? WHERE id = ?', nextDropWeight(set.weight, ex.weightIncrement), nxt.id);
     const target = nextTarget(toFlow(mid));
+    // sem mais séries por fazer não há descanso: o treino fica à espera de ser terminado
+    if (!target) rest = 0;
     const endsAt = rest > 0 ? now + rest * 1000 : null;
     if (target) await db.runAsync('UPDATE session_sets SET started_at = ? WHERE id = ?', endsAt ?? now, target.setId);
     if (mid.exercises.find((e) => e.id === ex.id)!.sets.every((s) => s.completed)) await db.runAsync('UPDATE session_exercises SET completed_at = ? WHERE id = ?', now, ex.id);
@@ -212,12 +214,18 @@ export async function discardSession(sessionId: string) {
 
 export { lastPerformance, bestsByExercise, type LastPerformance } from './historyRepo';
 
+/** Sem séries concluídas há mais do que isto, o treino considera-se esquecido aberto. */
+const FORGOTTEN_MS = 60 * 60_000;
+
 export class NoSetsError extends Error {}
 
 export async function finishSession(userId: string, sessionId: string): Promise<SessionSummary> {
   const db = await getDb();
   const s = await getSession(sessionId); if (!s || s.status !== 'active') throw new Error('session_not_active');
   const now = Date.now();
+  // treino esquecido aberto: a duração conta até à última série feita e não até alguém se lembrar de o terminar
+  const lastDone = Math.max(0, ...s.exercises.flatMap((e) => e.sets.map((x) => x.completedAt ?? 0)));
+  const endAt = lastDone > 0 && now - lastDone > FORGOTTEN_MS ? lastDone : now;
   const doneEx = s.exercises.map((e) => ({ e, done: e.sets.filter((x) => x.completed) })).filter((x) => x.done.length > 0);
   if (doneEx.length === 0) throw new NoSetsError();
   const asLogged = (xs: SessionSet[]): LoggedSet[] => xs.map((x) => ({ weight: x.weight, reps: x.reps, type: x.type }));
@@ -234,7 +242,7 @@ export async function finishSession(userId: string, sessionId: string): Promise<
      FROM workout_sessions w WHERE w.user_id = ? AND w.status = 'completed' AND ((? IS NOT NULL AND w.plan_day_id = ?) OR (? IS NULL AND w.name = ?)) ORDER BY w.completed_at DESC LIMIT 1`,
     userId, s.planDayId, s.planDayId, s.planDayId, s.name);
   const summary: SessionSummary = {
-    durationMs: now - s.startedAt, exercisesDone: doneEx.length, setsDone: allDone.length,
+    durationMs: Math.max(0, endAt - s.startedAt), exercisesDone: doneEx.length, setsDone: allDone.length,
     totalReps: allDone.filter((x) => x.type !== 'warmup').reduce((a, x) => a + x.reps, 0), volume: totalVolume(allDone), records,
     previous: prev ? { volume: prev.total_volume ?? 0, durationMs: prev.duration_ms ?? 0, sets: prev.sets } : null,
   };

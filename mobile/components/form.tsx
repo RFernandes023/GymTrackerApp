@@ -51,7 +51,8 @@ export function Stepper({ label, value, step, onChange, min = 0, max = 9999, for
         <TextInput
           value={text} keyboardType="decimal-pad" selectTextOnFocus
           onFocus={() => setFocused(true)}
-          onChangeText={setText}
+          // guarda logo enquanto se escreve: tocar num botão fora do campo não pode perder o valor
+          onChangeText={(t) => { setText(t); const n = t.trim() ? parse(t) : null; if (n !== null && n >= min && n <= max) onChange(n); }}
           onBlur={() => { setFocused(false); const n = parse(text); if (n !== null) onChange(Math.min(max, Math.max(min, n))); else setText(fmt(value)); }}
           style={[s.input, { flex: 1, textAlign: 'center', fontSize: big ? 28 : 18, fontWeight: '700', minHeight: size, paddingVertical: 0 }]}
         />
@@ -65,13 +66,13 @@ export function Toggle({ label, value, onChange }: { label: string; value: boole
   return (
     <Pressable accessibilityRole="switch" accessibilityState={{ checked: value }} onPress={() => onChange(!value)}
       style={{ minHeight: MIN_TOUCH, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <AppText>{label}</AppText>
+      <AppText style={{ flex: 1, paddingRight: spacing.md }}>{label}</AppText>
       <Ionicons name={value ? 'checkbox' : 'square-outline'} size={26} color={value ? colors.primary : colors.textMuted} />
     </Pressable>
   );
 }
 
 const s = StyleSheet.create({
-  chip: { minHeight: 40, paddingHorizontal: spacing.lg, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  chip: { minHeight: 44, paddingHorizontal: spacing.lg, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   input: { minHeight: MIN_TOUCH, backgroundColor: colors.surfaceAlt, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, color: colors.text, paddingHorizontal: spacing.md, fontSize: 16 },
 });

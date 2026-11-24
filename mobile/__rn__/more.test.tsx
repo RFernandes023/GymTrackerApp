@@ -63,6 +63,7 @@ describe('Exercícios', () => {
   });
   it('filtros: as 3 linhas de chips existem (músculo, equipamento, tipo)', async () => {
     await render(<ExerciseFilters />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Mais filtros' }));
     for (const n of ['Todos os músculos', 'Todo o equipamento', 'Composto', 'Isolamento', 'Barra', 'Halteres']) expect(screen.getByRole('button', { name: n })).toBeTruthy();
   });
 });

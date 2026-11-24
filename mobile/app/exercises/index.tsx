@@ -23,6 +23,7 @@ export default function ExerciseLibrary() {
   const [type, setType] = useState<string | null>(null);
   const [items, setItems] = useState<Exercise[]>([]);
   const [done, setDone] = useState(false);
+  const [filters, setFilters] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (offset: number) => {
@@ -51,16 +52,17 @@ export default function ExerciseLibrary() {
           <Chip label="Todos os músculos" selected={!muscle} onPress={() => setMuscle(null)} />
           {MUSCLES.map((m) => <Chip key={m} label={MUSCLE_LABELS[m]!} selected={muscle === m} onPress={() => setMuscle(muscle === m ? null : m)} />)}
         </ChipRow>
-        <ChipRow>
+        <Chip label={`${filters ? 'Menos' : 'Mais'} filtros${equipment || type ? ' (ativos)' : ''}`} selected={!!(equipment || type)} onPress={() => setFilters(!filters)} />
+        {filters && <><ChipRow>
           <Chip label="Todo o equipamento" selected={!equipment} onPress={() => setEquipment(null)} />
           {EQUIPMENT.map((m) => <Chip key={m} label={EQUIPMENT_LABELS[m]!} selected={equipment === m} onPress={() => setEquipment(equipment === m ? null : m)} />)}
         </ChipRow>
         <ChipRow>
           {Object.entries(EXERCISE_TYPE_LABELS).map(([k, v]) => <Chip key={k} label={v} selected={type === k} onPress={() => setType(type === k ? null : k)} />)}
-        </ChipRow>
+        </ChipRow></>}
         {error ? <AppText variant="small" style={{ color: colors.danger }}>{error}</AppText> : null}
         <FlatList
-          data={items} keyExtractor={(e) => e.id} contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xxl }}
+          data={items} keyboardShouldPersistTaps="handled" keyExtractor={(e) => e.id} contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xxl }}
           onEndReachedThreshold={0.5} onEndReached={() => { if (!done) void load(items.length); }}
           ListEmptyComponent={<AppText muted>Nenhum exercício encontrado.</AppText>}
           ListHeaderComponent={!picking ? <Button label="Criar exercício personalizado" variant="secondary" onPress={() => router.push('/exercises/new')} /> : undefined}
