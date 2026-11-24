@@ -14,7 +14,7 @@ export async function exportPlan(userId: string, planId: string) {
     const exercises: ExportablePlan['days'][number]['exercises'] = [];
     for (const e of d.exercises) {
       const lib = await getExercise(e.exerciseId);
-      exercises.push({ namePt: lib?.namePt ?? (lib ? null : e.name), nameEn: lib?.nameEn ?? e.name, primary: lib?.primary ?? [], secondary: lib?.secondary ?? [], equipment: lib?.equipment ?? 'other',
+      exercises.push({ exerciseId: lib?.id, namePt: lib?.namePt ?? (lib ? null : e.name), nameEn: lib?.nameEn ?? e.name, primary: lib?.primary ?? [], secondary: lib?.secondary ?? [], equipment: lib?.equipment ?? 'other',
         weightIncrement: e.weightIncrement, goal: e.goal, notes: e.notes, supersetGroup: e.supersetGroup ? `ss-${[...new Set(d.exercises.map((x) => x.supersetGroup).filter(Boolean))].indexOf(e.supersetGroup) + 1}` : null,
         sets: e.sets.map((s) => ({ type: s.type, repMin: s.repMin, repMax: s.repMax, weight: s.weight, restSeconds: s.restSeconds, rir: s.rir })) });
     }

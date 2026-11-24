@@ -6,6 +6,8 @@ export type PlanGoal = 'hypertrophy' | 'strength' | 'endurance';
 
 export interface ImportSet { type: SetType; repMin: number; repMax: number; weight: number; restSeconds: number | null; rir: number | null }
 export interface ImportExercise {
+  /** ID da biblioteca da app; se existir, tem prioridade sobre o nome. */
+  exerciseId: string | null;
   namePt: string | null; nameEn: string | null; displayName: string; primary: string[]; secondary: string[]; equipment: string | null;
   sets: ImportSet[]; weightIncrement: number | null; goal: PlanGoal | null; notes: string | null; supersetGroup: string | null;
 }
@@ -73,7 +75,8 @@ export function parsePlanJson(text: string): ParseResult {
       let namePt: string | null = null, nameEn: string | null = null;
       if (typeof e.name === 'string') { namePt = e.name.trim() || null; }
       else if (isObj(e.name)) { namePt = typeof e.name.pt === 'string' ? e.name.pt.trim() || null : null; nameEn = typeof e.name.en === 'string' ? e.name.en.trim() || null : null; }
-      if (!namePt && !nameEn) err(`${ep}.name`, 'indica o nome (texto ou {"pt": "...", "en": "..."})');
+      const exerciseId = typeof e.exerciseId === 'string' ? e.exerciseId.trim().slice(0, 120) || null : null;
+      if (!namePt && !nameEn && !exerciseId) err(`${ep}.name`, 'indica o exerciseId ou o nome (texto ou {"pt": "...", "en": "..."})');
       const mg = isObj(e.muscleGroups) ? e.muscleGroups : {};
       const mapMuscles = (v: unknown, field: string): string[] => {
         if (v === undefined) return [];
@@ -111,7 +114,7 @@ export function parsePlanJson(text: string): ParseResult {
       if (e.goal !== undefined && e.goal !== null) { if (GOALS.includes(e.goal as PlanGoal)) egoal = e.goal as PlanGoal; else warnings.push(`${ep}.goal "${String(e.goal)}" desconhecido (ignorado).`); }
       const notes = typeof e.notes === 'string' ? e.notes.trim().slice(0, 300) || null : null;
       const supersetGroup = typeof e.supersetGroup === 'string' && e.supersetGroup.trim() ? e.supersetGroup.trim().slice(0, 40) : null;
-      exercises.push({ namePt, nameEn, displayName: namePt ?? nameEn ?? '', primary, secondary, equipment, sets, weightIncrement: inc, goal: egoal, notes, supersetGroup });
+      exercises.push({ exerciseId, namePt, nameEn, displayName: namePt ?? nameEn ?? exerciseId ?? '', primary, secondary, equipment, sets, weightIncrement: inc, goal: egoal, notes, supersetGroup });
     });
     days.push({ name: dname, dayOfWeek: dow, exercises });
   });
@@ -124,7 +127,7 @@ export function parsePlanJson(text: string): ParseResult {
 export interface ExportablePlan {
   name: string; description: string | null; goal: PlanGoal;
   days: { name: string; dayOfWeek: number | null; exercises: {
-    namePt: string | null; nameEn: string; primary: string[]; secondary: string[]; equipment: string; weightIncrement: number; goal: string | null; notes: string | null; supersetGroup: string | null;
+    exerciseId?: string; namePt: string | null; nameEn: string; primary: string[]; secondary: string[]; equipment: string; weightIncrement: number; goal: string | null; notes: string | null; supersetGroup: string | null;
     sets: { type: SetType; repMin: number; repMax: number; weight: number; restSeconds: number | null; rir: number | null }[];
   }[] }[];
 }
@@ -136,7 +139,7 @@ export function buildPlanJson(p: ExportablePlan) {
     days: p.days.map((d) => ({
       name: d.name, dayOfWeek: d.dayOfWeek,
       exercises: d.exercises.map((e) => ({
-        name: { pt: e.namePt ?? e.nameEn, en: e.nameEn }, muscleGroups: { primary: e.primary, secondary: e.secondary }, equipment: e.equipment,
+        ...(e.exerciseId ? { exerciseId: e.exerciseId } : {}), name: { pt: e.namePt ?? e.nameEn, en: e.nameEn }, muscleGroups: { primary: e.primary, secondary: e.secondary }, equipment: e.equipment,
         sets: e.sets.map((s) => ({ type: s.type, reps: s.repMin === s.repMax ? s.repMin : { min: s.repMin, max: s.repMax }, weight: s.weight, restSeconds: s.restSeconds, rir: s.rir })),
         weightIncrement: e.weightIncrement, goal: e.goal ?? p.goal, notes: e.notes ?? '', ...(e.supersetGroup ? { supersetGroup: e.supersetGroup } : {}),
       })),

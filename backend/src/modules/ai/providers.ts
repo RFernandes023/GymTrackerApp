@@ -12,9 +12,9 @@ export class ProviderError extends Error {
   constructor(public kind: 'rate_limited' | 'provider_error' | 'timeout' | 'bad_response', message: string, public status?: number) { super(message); }
 }
 
-const TIMEOUT_MS = 40_000;
-async function post(fetchImpl: typeof fetch, url: string, headers: Record<string, string>, body: unknown): Promise<any> {
-  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+const DEFAULT_TIMEOUT_MS = 40_000;
+async function post(fetchImpl: typeof fetch, url: string, headers: Record<string, string>, body: unknown, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<any> {
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetchImpl(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body), signal: ctrl.signal });
     if (res.status === 429) throw new ProviderError('rate_limited', 'Fornecedor: limite atingido', 429);
@@ -27,9 +27,11 @@ async function post(fetchImpl: typeof fetch, url: string, headers: Record<string
   } finally { clearTimeout(t); }
 }
 
+const GEMINI_MIN_OUTPUT = 8192;
+
 export class GeminiProvider implements AiProvider {
   readonly name = 'gemini';
-  constructor(private o: { apiKey: string; model: string; baseUrl?: string; fetchImpl?: typeof fetch }) {}
+  constructor(private o: { apiKey: string; model: string; baseUrl?: string; timeoutMs?: number; fetchImpl?: typeof fetch }) {}
   async generateJson(req: ProviderRequest): Promise<ProviderResponse> {
     const contents = req.messages.map((m, i) => {
       const parts: any[] = [{ text: m.content }];
@@ -38,7 +40,8 @@ export class GeminiProvider implements AiProvider {
     });
     const json = await post(this.o.fetchImpl ?? fetch, `${this.o.baseUrl ?? 'https://generativelanguage.googleapis.com'}/v1beta/models/${encodeURIComponent(this.o.model)}:generateContent`,
       { 'x-goog-api-key': this.o.apiKey },
-      { systemInstruction: { parts: [{ text: req.system }] }, contents, generationConfig: { responseMimeType: 'application/json', maxOutputTokens: req.maxOutputTokens, temperature: 0.4 } });
+      // os modelos Gemini recentes gastam parte do limite a "pensar": com pouca folga a resposta sai cortada ou vazia
+      { systemInstruction: { parts: [{ text: req.system }] }, contents, generationConfig: { responseMimeType: 'application/json', maxOutputTokens: Math.max(req.maxOutputTokens, GEMINI_MIN_OUTPUT), temperature: 0.4 } }, this.o.timeoutMs);
     const text = (json?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p?.text ?? '').join('');
     if (!text) throw new ProviderError('bad_response', 'Resposta vazia (possivelmente bloqueada por filtros de segurança)');
     return { text, usage: { inputTokens: json?.usageMetadata?.promptTokenCount, outputTokens: json?.usageMetadata?.candidatesTokenCount } };
@@ -48,14 +51,14 @@ export class GeminiProvider implements AiProvider {
 /** Qualquer API compatível com /chat/completions (OpenAI, Azure, servidores locais…). */
 export class OpenAiCompatibleProvider implements AiProvider {
   readonly name = 'openai';
-  constructor(private o: { apiKey: string; model: string; baseUrl: string; fetchImpl?: typeof fetch }) {}
+  constructor(private o: { apiKey: string; model: string; visionModel?: string; baseUrl: string; timeoutMs?: number; fetchImpl?: typeof fetch }) {}
   async generateJson(req: ProviderRequest): Promise<ProviderResponse> {
     const messages: any[] = [{ role: 'system', content: req.system }, ...req.messages.map((m, i) => {
       if (req.image && i === req.messages.length - 1 && m.role === 'user') return { role: 'user', content: [{ type: 'text', text: m.content }, { type: 'image_url', image_url: { url: `data:${req.image.mimeType};base64,${req.image.base64}` } }] };
       return m;
     })];
     const json = await post(this.o.fetchImpl ?? fetch, `${this.o.baseUrl.replace(/\/$/, '')}/chat/completions`, { Authorization: `Bearer ${this.o.apiKey}` },
-      { model: this.o.model, messages, response_format: { type: 'json_object' }, max_tokens: req.maxOutputTokens, temperature: 0.4 });
+      { model: (req.image && this.o.visionModel) || this.o.model, messages, response_format: { type: 'json_object' }, max_tokens: req.maxOutputTokens, temperature: 0.4 }, this.o.timeoutMs);
     const text = json?.choices?.[0]?.message?.content;
     if (typeof text !== 'string' || !text) throw new ProviderError('bad_response', 'Resposta vazia');
     return { text, usage: { inputTokens: json?.usage?.prompt_tokens, outputTokens: json?.usage?.completion_tokens } };

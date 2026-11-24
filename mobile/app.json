@@ -3,7 +3,7 @@
     "name": "Gym & Nutrition Tracker",
     "slug": "gym-nutrition-tracker",
     "scheme": "gymtracker",
-    "version": "0.1.0",
+    "version": "0.8.1",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
@@ -21,7 +21,8 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.SYSTEM_ALERT_WINDOW"
-      ]
+      ],
+      "versionCode": 9
     },
     "plugins": [
       "expo-router",
@@ -46,7 +47,8 @@
           "style": "dark",
           "enforceContrast": false
         }
-      ]
+      ],
+      "./plugins/withApiCleartext"
     ],
     "extra": {
       "router": {

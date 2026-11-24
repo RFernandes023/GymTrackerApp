@@ -62,7 +62,7 @@ export default function Coach() {
     } catch (e) { setError(describeAiError(e)); } finally { setLoading(false); }
   };
 
-  const showData = async () => { const ctx = await ctxFor(task); setPreview({ ctx, bytes: Buffer.byteLength(JSON.stringify(ctx.data)) }); };
+  const showData = async () => { const ctx = await ctxFor(task); setPreview({ ctx, bytes: new TextEncoder().encode(JSON.stringify(ctx.data)).length }); };
   const toggleScope = async (s: AiScope) => { const next = { ...scopes, [s]: !scopes[s] }; setScopesState(next); await setScopes(user.id, next); };
 
   return (

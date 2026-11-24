@@ -7,7 +7,7 @@ import { AppText, Button, Card, Screen, ScreenHeader } from '../components/ui';
 import { Chip, ChipRow, Field } from '../components/form';
 import { useAuth } from '../store/authStore';
 import { getExercise } from '../features/workouts/exercisesRepo';
-import { applyImport, defaultDecision, resolveImport, type Decision, type ImportResult, type ResolvedImportExercise } from '../features/exchange/planImport';
+import { aiPlanInstructions, applyImport, defaultDecision, resolveImport, type Decision, type ImportResult, type ResolvedImportExercise } from '../features/exchange/planImport';
 import { MUSCLE_LABELS } from '../features/workouts/types';
 import { colors, radius, spacing } from '../theme/tokens';
 
@@ -26,6 +26,7 @@ export default function ImportPlan() {
   const [name, setName] = useState('');
   const [goal, setGoal] = useState<PlanGoal>('hypertrophy');
   const [dayNames, setDayNames] = useState<string[]>([]);
+  const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
 
@@ -50,6 +51,8 @@ export default function ImportPlan() {
 
   const setDecision = (di: number, ei: number, d: Decision) => setDecisions(decisions.map((row, i) => (i === di ? row.map((x, k) => (k === ei ? d : x)) : row)));
   const pasteIt = async () => { const t = await Clipboard.getStringAsync(); setText(t); if (t.trim()) await validate(t); };
+
+  const copyForAi = async () => { await Clipboard.setStringAsync(await aiPlanInstructions(user.id)); setCopied(true); };
 
   const confirm = async () => {
     if (!plan) return;
@@ -78,6 +81,11 @@ export default function ImportPlan() {
           </Card>
         ) : !plan ? (
           <>
+            <Card style={{ gap: spacing.sm }}>
+              <AppText variant="h2">Pedir o plano a uma IA</AppText>
+              <AppText variant="small" muted>Copia as instruções com todos os exercícios da app (e os teus), cola-as no ChatGPT, Gemini ou outra IA, e traz o JSON para aqui.</AppText>
+              <Button compact icon={copied ? 'checkmark' : 'copy-outline'} label={copied ? 'Copiado' : 'Copiar instruções e exercícios'} variant="secondary" onPress={() => void copyForAi()} />
+            </Card>
             <AppText variant="small" muted>Cola aqui um plano em JSON (formato versionado 1.0). Podes editar o texto antes de validar. Nada é importado sem validação e confirmação.</AppText>
             <TextInput value={text} onChangeText={setText} multiline autoCapitalize="none" autoCorrect={false} placeholder='{ "schemaVersion": "1.0", "type": "workout_plan", ... }' placeholderTextColor={colors.textMuted}
               style={{ minHeight: 220, maxHeight: 360, textAlignVertical: 'top', backgroundColor: colors.surfaceAlt, borderRadius: radius.md, borderWidth: 1, borderColor: errors.length ? colors.danger : colors.border, color: colors.text, padding: spacing.md, fontFamily: 'monospace', fontSize: 13 }} />

@@ -11,10 +11,14 @@ const schema = z.object({
   // IA (opcional: por defeito desligada → /ai/* responde 503 e a app usa só análises locais)
   AI_PROVIDER: z.enum(['none', 'gemini', 'openai']).default('none'),
   GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  GEMINI_MODEL: z.string().default('gemini-flash-latest'),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_BASE_URL: z.string().default('https://api.openai.com/v1'),
   OPENAI_MODEL: z.string().default('gpt-4o-mini'),
+  /** Modelo para fotografias (opcional; por defeito o mesmo do chat). */
+  OPENAI_VISION_MODEL: z.string().optional(),
+  /** Modelos locais (Ollama) podem demorar mais do que os da cloud. */
+  AI_TIMEOUT_MS: z.coerce.number().int().min(5_000).default(40_000),
   AI_DAILY_LIMIT: z.coerce.number().int().min(1).default(40),
   AI_MEAL_PHOTO_DAILY_LIMIT: z.coerce.number().int().min(1).default(10),
   AI_COST_NOTE: z.string().default('Sem custo enquanto estiveres dentro dos limites gratuitos do fornecedor; acima disso o fornecedor pode cobrar.'),

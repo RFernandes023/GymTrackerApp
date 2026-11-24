@@ -1,4 +1,9 @@
 # Changelog
+## 0.8.1 — Exercícios no JSON
+- exerciseId na importação/exportação de planos, schema com os 617 exercícios e botão para copiar as instruções para uma IA.
+## 0.8.0 (cont.) — IA local e APK
+- Treinador IA com Ollama (modelo de visão e tempo limite configuráveis); "Ver o que será enviado" funciona no Android.
+- APK release liga ao servidor http da rede local (exceção só para esse endereço).
 ## 0.8.0 — Redesign
 - Barra do Android escondida (desliza para a ver) e menus, painéis e botões com a área do sistema respeitada; teclado deixa de tapar a ação principal.
 - Treino: nada começa sem confirmação, proteção contra duplo toque, minimizar/descartar, sem descanso depois da última série, duração correta em treinos esquecidos.

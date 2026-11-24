@@ -12,12 +12,37 @@ export interface ResolvedImportExercise {
 }
 export type Decision = { kind: 'use'; exerciseId: string } | { kind: 'create'; muscle: string; equipment: string } | { kind: 'skip' };
 
+/** Exercício da biblioteca ou personalizado deste utilizador (nunca apagado nem de outra conta). */
+async function availableExercise(userId: string, id: string) {
+  const db = await getDb();
+  return db.getFirstAsync<{ id: string }>('SELECT id FROM exercises WHERE id = ? AND deleted_at IS NULL AND (user_id IS NULL OR user_id = ?)', id, userId);
+}
+
+/** Texto para dar a uma IA: formato + lista de exercícios da app (incluindo os personalizados) para ela só usar os que existem. */
+export async function aiPlanInstructions(userId: string): Promise<string> {
+  const all = await searchExercises(userId, { limit: 5000 });
+  const example = { schemaVersion: '1.0', type: 'workout_plan', name: 'Nome do plano', settings: { goal: 'hypertrophy', restBetweenExercises: 120 },
+    days: [{ name: 'Dia A', dayOfWeek: null, exercises: [{ exerciseId: all[0]?.id ?? 'ID', name: all[0] ? all[0].namePt ?? all[0].nameEn : 'Nome', sets: [{ type: 'working', reps: { min: 8, max: 12 }, restSeconds: 120 }] }] }] };
+  return [
+    'Cria um plano de treino em JSON para eu importar na minha app. Responde APENAS com o JSON, sem texto à volta.',
+    'Regras: usa só exercícios da LISTA, com o "exerciseId" exato. 1 a 7 dias, 1 a 15 exercícios por dia, 1 a 15 séries por exercício.',
+    'goal: hypertrophy | strength | endurance. dayOfWeek: 1 (segunda) a 7 (domingo) ou null. type da série: warmup | working | drop | rest_pause | failure.',
+    'reps: inteiro ou {"min","max"}. weight em kg (omite se não souberes). Opcionais por exercício: weightIncrement, notes, supersetGroup (mesmo texto = superset).',
+    '', 'EXEMPLO:', JSON.stringify(example, null, 1), '', 'LISTA (exerciseId | nome | músculo | equipamento):',
+    ...all.map((e) => `${e.id} | ${e.namePt ?? e.nameEn} | ${e.primary.join(',')} | ${e.equipment}`),
+    '', 'O MEU PEDIDO: (escreve aqui o objetivo, quantos dias por semana e o equipamento que tens)',
+  ].join('\n');
+}
+
 /** Procura na biblioteca (PT/EN) o exercício do JSON e devolve correspondência + sugestões para exercícios desconhecidos. */
 export async function resolveImport(userId: string, plan: ImportPlan): Promise<ResolvedImportExercise[][]> {
   const out: ResolvedImportExercise[][] = [];
   for (const d of plan.days) {
     const row: ResolvedImportExercise[] = [];
     for (const ex of d.exercises) {
+      // o ID da biblioteca é exato: não é preciso adivinhar pelo nome
+      const byId = ex.exerciseId ? await availableExercise(userId, ex.exerciseId) : null;
+      if (byId) { row.push({ ex, exerciseId: byId.id, status: 'matched', suggestions: [] }); continue; }
       const names = [ex.namePt, ex.nameEn].filter((n): n is string => !!n);
       const cands = new Map<string, { id: string; names: string[]; label: string }>();
       for (const n of names) for (const q of [n, ...normalizeName(n).split(' ').filter((t) => t.length > 3)]) for (const c of await searchExercises(userId, { query: q, limit: 25 }))

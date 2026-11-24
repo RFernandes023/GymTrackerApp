@@ -15,7 +15,8 @@ async function raw(path: string, init: RequestInit & { token?: string } = {}) {
     return await fetch(`${API_URL}${path}`, {
       ...rest,
       headers: {
-        'Content-Type': 'application/json',
+        // sem corpo não se anuncia JSON: o servidor recusa DELETE/POST vazios com 400
+        ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(rest.headers ?? {}),
       },

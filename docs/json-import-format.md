@@ -12,7 +12,7 @@ Um ficheiro "todos os planos" (`workout_plans`) mostra a lista; importas um plan
 
 ## `workout_plan`
 
-O JSON Schema formal está disponível em [`plan-import.schema.json`](./plan-import.schema.json). O exemplo abaixo é o formato canónico recomendado.
+O JSON Schema formal está disponível em [`plan-import.schema.json`](./plan-import.schema.json). Inclui os IDs de todos os exercícios da biblioteca; regenera-o com `node tools/build-plan-schema.mjs` quando `exercises.json` mudar. Na app, **Importar plano → Copiar instruções e exercícios** dá o mesmo a uma IA, com os teus exercícios personalizados. O exemplo abaixo é o formato canónico recomendado.
 ```json
 {
   "schemaVersion": "1.0",
@@ -27,6 +27,7 @@ O JSON Schema formal está disponível em [`plan-import.schema.json`](./plan-imp
       "dayOfWeek": 1,
       "exercises": [
         {
+          "exerciseId": "Barbell_Bench_Press_-_Medium_Grip",
           "name": { "pt": "Supino plano com barra", "en": "Barbell Bench Press" },
           "muscleGroups": { "primary": ["chest"], "secondary": ["triceps", "front_delts"] },
           "equipment": "barbell",
@@ -57,7 +58,8 @@ O JSON Schema formal está disponível em [`plan-import.schema.json`](./plan-imp
 | `days[].name` | obrigatório, 1–40 |
 | `days[].dayOfWeek` | `null` (plano flexível) ou 1 (segunda) … 7 (domingo) |
 | `days[].exercises` | 1–15 |
-| `exercises[].name` | texto **ou** `{ "pt": "...", "en": "..." }` (pelo menos um) |
+| `exercises[].exerciseId` | opcional mas **recomendado**: ID de um exercício da app (lista no JSON Schema). Se existir, tem prioridade sobre o nome; se não existir, procura-se pelo nome |
+| `exercises[].name` | (opcional com `exerciseId`) texto **ou** `{ "pt": "...", "en": "..." }` (pelo menos um) |
 | `exercises[].muscleGroups` | `primary[]`, `secondary[]`; aliases aceites (`front_delts`→`shoulders`, `lats`→`back`, `core`→`abs`, `quadriceps`→`quads`, …); desconhecidos → aviso. Os músculos principais permitem criar o exercício personalizado se não existir |
 | `exercises[].equipment` | `barbell, dumbbell, machine, cable, bodyweight, kettlebell, bands, other` (desconhecido → `other` + aviso) |
 | `exercises[].sets` | 1–15 séries |

@@ -26,6 +26,8 @@ export interface AppOptions {
   jwtSecret: string;
   corsOrigins?: string[];
   logger?: boolean;
+  /** Atrás de um proxy (PaaS): usa o IP real do cliente nos limites de pedidos. Só o proxy imediato é de confiança. */
+  trustProxy?: boolean;
   /** Serviço de IA (opcional). Sem ele, /ai/* responde 503 "ai_unavailable". */
   ai?: AiService;
 }
@@ -36,6 +38,7 @@ export async function buildApp(opts: AppOptions) {
       ? { level: 'info', redact: ['req.headers.authorization', 'req.body.idToken', 'req.body.refreshToken', 'req.body.imageBase64'] }
       : false,
     bodyLimit: 1_048_576,
+    trustProxy: opts.trustProxy ? (_addr: string, hop: number) => hop < 1 : false,
   });
 
   await app.register(helmet);

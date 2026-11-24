@@ -1,7 +1,9 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { device, routerMock, setParams, USER } from './harness';
-import { searchExercises } from '../features/workouts/exercisesRepo';
+import { parsePlanJson } from '@gym/shared';
+import { aiPlanInstructions } from '../features/exchange/planImport';
+import { createCustomExercise, searchExercises } from '../features/workouts/exercisesRepo';
 import * as plans from '../features/workouts/plansRepo';
 import * as foods from '../features/nutrition/foodsRepo';
 import * as nut from '../features/nutrition/nutritionRepo';
@@ -38,6 +40,26 @@ describe('Importar plano (JSON)', () => {
     expect(await screen.findByText('Plano importado')).toBeTruthy();
     const list = await plans.listPlans(USER.id); expect(list.map((p) => p.name)).toEqual(['Upper Body']);
     expect((await plans.getPlan(list[0]!.id))!.days[0]!.exercises[0]!.sets).toHaveLength(2);
+  });
+  it('exerciseId escolhe o exercício exato, mesmo sem nome', async () => {
+    const id = (await searchExercises(USER.id, { query: 'Remada curvada com barra' }))[0]!.id;
+    (global as any).__clipboard = JSON.stringify({ ...BRIEF, days: [{ name: 'D', exercises: [{ exerciseId: id, sets: [{ reps: 8 }] }] }] });
+    await render(<ImportPlan />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Colar da área de transferência' }));
+    expect(await screen.findByText('Encontrado na biblioteca')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Confirmar importação' }));
+    await screen.findByText('Plano importado');
+    const list = await plans.listPlans(USER.id);
+    expect((await plans.getPlan(list[0]!.id))!.days[0]!.exercises[0]!.exerciseId).toBe(id);
+  });
+  it('copiar instruções para IA inclui a biblioteca toda e os personalizados', async () => {
+    const mine = await createCustomExercise(USER.id, { namePt: 'Prensa minha', primary: ['quads'], equipment: 'machine' });
+    const text = await aiPlanInstructions(USER.id);
+    const lib = require('../assets/exercises.json') as { id: string }[];
+    expect(lib.every((e) => text.includes(e.id + ' | '))).toBe(true); expect(text).toContain(mine.id);
+    expect(parsePlanJson(text.split('EXEMPLO:')[1]!.split('LISTA')[0]!).ok).toBe(true);
+    const schema = require('../../docs/plan-import.schema.json');
+    expect(schema.$defs.libraryExerciseId.oneOf.map((o: any) => o.const)).toEqual(lib.map((e) => e.id)); // schema atualizado
   });
   it('JSON inválido mostra os erros e NÃO importa', async () => {
     await render(<ImportPlan />);

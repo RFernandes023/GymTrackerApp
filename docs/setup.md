@@ -56,3 +56,6 @@ O servidor guarda cada entidade na coleção do brief (`workoutPlans`, `workoutS
 ## Gerar o APK de teste
 Não foi possível gerar aqui (sem Android SDK/EAS). Com conta Expo: `npm i -g eas-cli && cd mobile && eas login && eas build --platform android --profile preview` (APK instalável; `eas.json` incluído). Definir antes `EXPO_PUBLIC_API_URL` (URL **HTTPS** do backend) e `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` em `eas secret`/`.env`. Registar o SHA-1 da keystore do build no cliente Android do Google Cloud.
 `npx expo prebuild --platform android` foi executado aqui com sucesso (plugins e permissões validados).
+
+## Servidor gratuito (Render)
+`render.yaml` descreve o serviço. Na Render: New → Blueprint → escolher o repositório → preencher MONGODB_URI, JWT_SECRET, GOOGLE_CLIENT_IDS e GEMINI_API_KEY. No Atlas, permitir o acesso da Render em Network Access. Depois, `EXPO_PUBLIC_API_URL=https://<serviço>.onrender.com` em `mobile/.env` e gerar novo APK. Testar a chave antes: `npm run ai:check -w backend`.
