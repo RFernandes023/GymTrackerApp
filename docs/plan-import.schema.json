@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/gym-nutrition-tracker/plan-import.schema.json",
+  "title": "Importação de planos de treino",
+  "description": "Formato canónico aceite pela importação de planos da app. A versão 1.x é suportada.",
+  "type": "object",
+  "required": ["schemaVersion", "type", "name", "days"],
+  "properties": {
+    "schemaVersion": { "type": "string", "pattern": "^1(\\.\\d+)?$", "examples": ["1.0"] },
+    "type": { "const": "workout_plan" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "description": { "type": ["string", "null"], "maxLength": 500 },
+    "language": { "type": ["string", "null"], "default": "pt-PT" },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "goal": { "enum": ["hypertrophy", "strength", "endurance"] },
+        "restBetweenExercises": { "type": "number", "minimum": 0, "maximum": 1800 }
+      },
+      "additionalProperties": true
+    },
+    "days": {
+      "type": "array", "minItems": 1, "maxItems": 7,
+      "items": {
+        "type": "object", "required": ["name", "exercises"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "dayOfWeek": { "type": ["integer", "null"], "minimum": 1, "maximum": 7, "description": "1=segunda-feira, ..., 7=domingo; null para plano flexível." },
+          "exercises": {
+            "type": "array", "minItems": 1, "maxItems": 15,
+            "items": {
+              "type": "object", "required": ["name", "sets"],
+              "properties": {
+                "name": {
+                  "oneOf": [
+                    { "type": "string", "minLength": 1 },
+                    { "type": "object", "properties": { "pt": { "type": "string" }, "en": { "type": "string" } }, "anyOf": [{ "required": ["pt"] }, { "required": ["en"] }], "additionalProperties": true }
+                  ]
+                },
+                "muscleGroups": {
+                  "type": "object",
+                  "properties": { "primary": { "type": "array", "items": { "type": "string" } }, "secondary": { "type": "array", "items": { "type": "string" } } },
+                  "additionalProperties": true
+                },
+                "equipment": { "type": "string", "enum": ["barbell", "dumbbell", "machine", "cable", "bodyweight", "kettlebell", "bands", "other"] },
+                "sets": {
+                  "type": "array", "minItems": 1, "maxItems": 15,
+                  "items": {
+                    "type": "object", "required": ["reps"],
+                    "properties": {
+                      "type": { "type": "string", "enum": ["warmup", "working", "drop", "rest_pause", "failure"] },
+                      "reps": {
+                        "oneOf": [
+                          { "type": "integer", "minimum": 1, "maximum": 100 },
+                          { "type": "object", "required": ["min", "max"], "properties": { "min": { "type": "integer", "minimum": 1, "maximum": 100 }, "max": { "type": "integer", "minimum": 1, "maximum": 100 } }, "additionalProperties": true }
+                        ]
+                      },
+                      "weight": { "type": ["number", "null"], "minimum": 0, "maximum": 500, "description": "Peso em kg; se omitido, assume 0." },
+                      "restSeconds": { "type": ["integer", "null"], "minimum": 0, "maximum": 1800 },
+                      "rir": { "type": ["integer", "null"], "minimum": 0, "maximum": 5 }
+                    },
+                    "additionalProperties": true
+                  }
+                },
+                "weightIncrement": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 50 },
+                "goal": { "enum": ["hypertrophy", "strength", "endurance", null] },
+                "notes": { "type": ["string", "null"], "maxLength": 300 },
+                "supersetGroup": { "type": ["string", "null"], "maxLength": 40 }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

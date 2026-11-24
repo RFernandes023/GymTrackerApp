@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Gym & Nutrition Tracker",
+    "slug": "gym-nutrition-tracker",
+    "scheme": "gymtracker",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "android": {
+      "package": "pt.gymtracker.app",
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "VIBRATE",
+        "CAMERA",
+        "INTERNET",
+        "android.permission.CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-secure-store",
+      "@react-native-google-signin/google-signin",
+      "expo-status-bar",
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "A câmara é usada para ler códigos de barras e fotografar tabelas nutricionais. As fotografias são processadas no dispositivo e apagadas de seguida.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-sharing",
+      "expo-notifications"
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "7c5ab7b4-c591-4344-be73-af85f6b4d473"
+      }
+    }
+  }
+}
